@@ -1,0 +1,153 @@
+diff --git a/build/lib/policies/policyData.jsonc b/build/lib/policies/policyData.jsonc
+index f58dda70afa..2abe4b981d2 100644
+--- a/build/lib/policies/policyData.jsonc
++++ b/build/lib/policies/policyData.jsonc
+@@ -299,7 +299,7 @@
+                 }
+             },
+             "type": "boolean",
+-            "default": true
++            "default": false
+         },
+         {
+             "key": "workbench.browser.enableChatTools",
+diff --git a/src/vs/platform/telemetry/common/telemetryService.ts b/src/vs/platform/telemetry/common/telemetryService.ts
+index 445609fb7d3..4e9ebfd2dae 100644
+--- a/src/vs/platform/telemetry/common/telemetryService.ts
++++ b/src/vs/platform/telemetry/common/telemetryService.ts
+@@ -295,7 +295,8 @@ configurationRegistry.registerConfiguration({
+ 				localize('telemetry.telemetryLevel.off', "Disables all product telemetry.")
+ 			],
+ 			'markdownDescription': getTelemetryLevelSettingDescription(),
+-			'default': TelemetryConfiguration.ON,
++			'default': TelemetryConfiguration.OFF,
++			'included': false,
+ 			'restricted': true,
+ 			'scope': ConfigurationScope.APPLICATION,
+ 			'tags': ['usesOnlineServices', 'telemetry'],
+@@ -331,7 +332,8 @@ configurationRegistry.registerConfiguration({
+ 		},
+ 		'telemetry.feedback.enabled': {
+ 			type: 'boolean',
+-			default: true,
++			default: false,
++			included: false,
+ 			description: localize('telemetry.feedback.enabled', "Enable feedback mechanisms such as the issue reporter, surveys, and other feedback options."),
+ 			policy: {
+ 				name: 'EnableFeedback',
+diff --git a/src/vs/platform/telemetry/common/telemetryUtils.ts b/src/vs/platform/telemetry/common/telemetryUtils.ts
+index d1acea8ff5d..e126ba02dd6 100644
+--- a/src/vs/platform/telemetry/common/telemetryUtils.ts
++++ b/src/vs/platform/telemetry/common/telemetryUtils.ts
+@@ -145,7 +145,7 @@ export function getTelemetryLevel(configurationService: IConfigurationService):
+ 	}
+ 
+ 	// Maps new telemetry setting to a telemetry level
+-	switch (newConfig ?? TelemetryConfiguration.ON) {
++	switch (newConfig ?? TelemetryConfiguration.OFF) {
+ 		case TelemetryConfiguration.ON:
+ 			return TelemetryLevel.USAGE;
+ 		case TelemetryConfiguration.ERROR:
+diff --git a/src/vs/platform/telemetry/test/browser/telemetryService.test.ts b/src/vs/platform/telemetry/test/browser/telemetryService.test.ts
+index cf93a8cc0cd..0cd6cc0ba8a 100644
+--- a/src/vs/platform/telemetry/test/browser/telemetryService.test.ts
++++ b/src/vs/platform/telemetry/test/browser/telemetryService.test.ts
+@@ -212,13 +212,12 @@ suite('TelemetryService', () => {
+ 		service.dispose();
+ 	});
+ 
+-	test('telemetry on by default', function () {
++	test('telemetry off by default', function () {
+ 		const testAppender = new TestTelemetryAppender();
+ 		const service = new TelemetryService({ appenders: [testAppender] }, new TestConfigurationService(), TestProductService);
+ 
+ 		service.publicLog('testEvent');
+-		assert.strictEqual(testAppender.getEventsCount(), 1);
+-		assert.strictEqual(testAppender.events[0].eventName, 'testEvent');
++		assert.strictEqual(testAppender.getEventsCount(), 0);
+ 
+ 		service.dispose();
+ 	});
+diff --git a/src/vs/server/node/serverServices.ts b/src/vs/server/node/serverServices.ts
+index c562b017550..2647c533123 100644
+--- a/src/vs/server/node/serverServices.ts
++++ b/src/vs/server/node/serverServices.ts
+@@ -186,7 +186,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
+ 			piiPaths: getPiiPathsFromEnvironment(environmentService)
+ 		};
+ 		const initialTelemetryLevelArg = environmentService.args['telemetry-level'];
+-		let injectedTelemetryLevel: TelemetryLevel = TelemetryLevel.USAGE;
++		let injectedTelemetryLevel: TelemetryLevel = TelemetryLevel.NONE;
+ 		// Convert the passed in CLI argument into a telemetry level for the telemetry service
+ 		if (initialTelemetryLevelArg === 'all') {
+ 			injectedTelemetryLevel = TelemetryLevel.USAGE;
+diff --git a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
+index 170cced5980..9941d7add2e 100644
+--- a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
++++ b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
+@@ -27,13 +27,15 @@ configurationRegistry.registerConfiguration({
+ 		[EDIT_TELEMETRY_SETTING_ID]: {
+ 			markdownDescription: localize('telemetry.editStats.enabled', "Controls whether to enable telemetry for edit statistics (only sends statistics if general telemetry is enabled)."),
+ 			type: 'boolean',
+-			default: true,
++			default: false,
++			included: false,
+ 			tags: ['experimental'],
+ 		},
+ 		[AI_STATS_SETTING_ID]: {
+ 			markdownDescription: localize('editor.aiStats.enabled', "Controls whether to enable AI statistics in the editor. The gauge shows the average AI rate across 5-minute sessions, where each session's rate is calculated as AI-inserted characters divided by total inserted characters."),
+ 			type: 'boolean',
+ 			default: false,
++			included: false,
+ 			tags: ['experimental'],
+ 			experiment: {
+ 				mode: 'auto'
+@@ -43,6 +45,7 @@ configurationRegistry.registerConfiguration({
+ 			markdownDescription: localize('telemetry.editStats.detailed.enabled', "Controls whether to enable telemetry for detailed edit statistics (only sends statistics if general telemetry is enabled)."),
+ 			type: 'boolean',
+ 			default: false,
++			included: false,
+ 			tags: ['experimental'],
+ 			experiment: {
+ 				mode: 'auto'
+@@ -52,12 +55,14 @@ configurationRegistry.registerConfiguration({
+ 			markdownDescription: localize('telemetry.editStats.showStatusBar', "Controls whether to show the status bar for edit telemetry."),
+ 			type: 'boolean',
+ 			default: false,
++			included: false,
+ 			tags: ['experimental'],
+ 		},
+ 		[EDIT_TELEMETRY_SHOW_DECORATIONS]: {
+ 			markdownDescription: localize('telemetry.editStats.showDecorations', "Controls whether to show decorations for edit telemetry."),
+ 			type: 'boolean',
+ 			default: false,
++			included: false,
+ 			tags: ['experimental'],
+ 		},
+ 	}
+diff --git a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetryContribution.ts b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetryContribution.ts
+index 1c6db97c3be..401ba9dadb0 100644
+--- a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetryContribution.ts
++++ b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetryContribution.ts
+@@ -29,7 +29,7 @@ export class EditTelemetryContribution extends Disposable {
+ 		const workspace = derived(reader => reader.store.add(instantiationService.createInstance(VSCodeWorkspace)));
+ 		const annotatedDocuments = derived(reader => reader.store.add(instantiationService.createInstance(AnnotatedDocuments, workspace.read(reader))));
+ 
+-		const editSourceTrackingEnabled = observableConfigValue(EDIT_TELEMETRY_SETTING_ID, true, configurationService);
++		const editSourceTrackingEnabled = observableConfigValue(EDIT_TELEMETRY_SETTING_ID, false, configurationService);
+ 		this._register(autorun(r => {
+ 			const enabled = editSourceTrackingEnabled.read(r);
+ 			if (!enabled || !telemetryLevelEnabled(telemetryService, TelemetryLevel.USAGE)) {
+diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
+index d4670f21ac9..550ef83fced 100644
+--- a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
++++ b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
+@@ -990,7 +990,7 @@ export class GettingStartedPage extends EditorPane {
+ 			}
+ 		}
+ 
+-		if (this.editorInput?.showTelemetryNotice && this.productService.openToWelcomeMainPage) {
++		if (this.editorInput?.showTelemetryNotice && this.productService.openToWelcomeMainPage && getTelemetryLevel(this.configurationService) !== TelemetryLevel.NONE && this.productService.enableTelemetry) {
+ 			const telemetryNotice = $('p.telemetry-notice');
+ 			this.buildTelemetryFooter(telemetryNotice);
+ 			footer.appendChild(telemetryNotice);
