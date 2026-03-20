@@ -25,44 +25,44 @@ git fetch upstream
 
 ```bash
 # Sync fork with upstream microsoft/vscode
-python utils/patches.py sync --vscode-dir "C:\...\coding\vscode" --force-push
+uv run utils/patches.py sync --vscode-dir "C:\...\coding\vscode" --force-push
 
 # Make changes in vscode, then generate a patch
-python utils/patches.py generate --target "C:\...\coding\vscode" --name debloat/remove-telemetry
+uv run utils/patches.py generate --target "C:\...\coding\vscode" --name debloat/remove-telemetry
 
 # Reset vscode back to clean state
 git checkout -- . && git clean -fd
 
 # Apply all patches to a clean vscode tree
-python utils/patches.py apply "C:\...\coding\vscode"
+uv run utils/patches.py apply "C:\...\coding\vscode"
 
 # Dry run (check without applying)
-python utils/patches.py apply "C:\...\coding\vscode" --dry-run
+uv run utils/patches.py apply "C:\...\coding\vscode" --dry-run
 
 # Reverse applied patches
-python utils/patches.py apply "C:\...\coding\vscode" --reverse
+uv run utils/patches.py apply "C:\...\coding\vscode" --reverse
 
 # List patches in series
-python utils/patches.py list
+uv run utils/patches.py list
 ```
 
 ## Workflows
 
 ### Adding a new change
-1. Sync: `python utils/patches.py sync --vscode-dir "..."`
+1. Sync: `uv run utils/patches.py sync --vscode-dir "..."`
 2. Edit files in vscode
-3. Generate: `python utils/patches.py generate --target "..." --name category/name`
+3. Generate: `uv run utils/patches.py generate --target "..." --name category/name`
 4. Clean: `git checkout -- . && git clean -fd` in vscode
 
 ### Upstream VS Code updates
-1. Sync: `python utils/patches.py sync --vscode-dir "..."`
-2. Apply: `python utils/patches.py apply "..."`
+1. Sync: `uv run utils/patches.py sync --vscode-dir "..."`
+2. Apply: `uv run utils/patches.py apply "..."`
 3. If patches fail: fix in vscode, regenerate with `generate`, clean again
 
 ### Building
-1. `python utils/patches.py apply "..."`
+1. `uv run utils/patches.py apply "..."`
 2. Build vscode as usual
-3. `python utils/patches.py apply "..." --reverse` when done
+3. `uv run utils/patches.py apply "..." --reverse` when done
 
 ## Patch format
 
