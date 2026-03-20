@@ -1,13 +1,69 @@
-#### forked on Friday, 20th March 2026.
+# better-vscode
 
-The goal of this fork is to try and debloat VSCode, make it relatively faster and useable, while solving a few bugs along the way.
+Debloat, speed up, and add features to VS Code. Patches are stored here, source stays untouched.
 
-## What the script does (fix-vs2026-build.ps1):
-1. Cleans `node_modules/` and `package-lock.json`
-2. `npm install --ignore-scripts` — installs deps without building
-3. Patches node-gyp (system + local) for VS 2026 (version 18, toolset v145)
-4. npm rebuild with env vars — compiles native modules against Electron headers
-5. npm install — runs VS Code's postinstall scripts (build dirs, extensions)
-## Usage:
-`powershell -ExecutionPolicy Bypass -File .\fix-vs2026-build.ps1`
-The npm rebuild step was the missing piece — the .npmrc Electron settings (disturl, target, runtime) aren't recognized at project level by newer npm, so they must be passed as env vars to compile native modules correctly.
+```
+AmaanBilwar/vscode        - clean fork of microsoft/vscode (source code)
+AmaanBilwar/better-vscode - patches and tooling (no source code)
+```
+
+## Requirements
+
+- Python 3.8+
+- GNU `patch` (Git for Windows includes it, or `scoop install patch`)
+- Git
+
+## First time setup
+
+```bash
+# Add upstream to your vscode fork (once)
+git remote add upstream https://github.com/microsoft/vscode.git
+git fetch upstream
+```
+
+## Commands
+
+```bash
+# Sync fork with upstream microsoft/vscode
+python utils/patches.py sync --vscode-dir "C:\...\coding\vscode" --force-push
+
+# Make changes in vscode, then generate a patch
+python utils/patches.py generate --target "C:\...\coding\vscode" --name debloat/remove-telemetry
+
+# Reset vscode back to clean state
+git checkout -- . && git clean -fd
+
+# Apply all patches to a clean vscode tree
+python utils/patches.py apply "C:\...\coding\vscode"
+
+# Dry run (check without applying)
+python utils/patches.py apply "C:\...\coding\vscode" --dry-run
+
+# Reverse applied patches
+python utils/patches.py apply "C:\...\coding\vscode" --reverse
+
+# List patches in series
+python utils/patches.py list
+```
+
+## Workflows
+
+### Adding a new change
+1. Sync: `python utils/patches.py sync --vscode-dir "..."`
+2. Edit files in vscode
+3. Generate: `python utils/patches.py generate --target "..." --name category/name`
+4. Clean: `git checkout -- . && git clean -fd` in vscode
+
+### Upstream VS Code updates
+1. Sync: `python utils/patches.py sync --vscode-dir "..."`
+2. Apply: `python utils/patches.py apply "..."`
+3. If patches fail: fix in vscode, regenerate with `generate`, clean again
+
+### Building
+1. `python utils/patches.py apply "..."`
+2. Build vscode as usual
+3. `python utils/patches.py apply "..." --reverse` when done
+
+## Patch format
+
+Standard unified diff. Patches go in `patches/` (subdirectories for organization, e.g. `patches/debloat/`). Order is defined in `patches/series`.
