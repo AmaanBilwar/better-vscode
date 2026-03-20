@@ -1,11 +1,11 @@
-# better-vscode
+# Better-VSCode
 
-Debloat, speed up, and add features to VS Code. Patches are stored here, source stays untouched.
+Uses a patch system similar to [Helium](https://github/imputnet/helium), where i use patches to make changes to the vscode fork and dsitribute binaries
 
-```
-AmaanBilwar/vscode        - clean fork of microsoft/vscode (source code)
-AmaanBilwar/better-vscode - patches and tooling (no source code)
-```
+
+[AmaanBilwar/vscode](https://github.com/AmaanBilwar/vscode) - clean fork of microsoft/vscode(source code)
+
+[AmaanBilwar/better-vscode](https://github.com/AmaanBilwar/better-vscode) - patches and tooling (no source code)
 
 ## Requirements
 
