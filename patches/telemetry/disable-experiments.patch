@@ -1,0 +1,14 @@
+diff --git a/src/vs/workbench/services/assignment/common/assignmentService.ts b/src/vs/workbench/services/assignment/common/assignmentService.ts
+index f7594b944a2..934bc7909c4 100644
+--- a/src/vs/workbench/services/assignment/common/assignmentService.ts
++++ b/src/vs/workbench/services/assignment/common/assignmentService.ts
+@@ -329,7 +329,8 @@ registry.registerConfiguration({
+ 		'workbench.enableExperiments': {
+ 			'type': 'boolean',
+ 			'description': localize('workbench.enableExperiments', "Fetches experiments to run from a Microsoft online service."),
+-			'default': true,
++			'default': false,
++			'included': false,
+ 			'scope': ConfigurationScope.APPLICATION,
+ 			'restricted': true,
+ 			'tags': ['usesOnlineServices']

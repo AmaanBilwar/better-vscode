@@ -1,4 +1,6 @@
-
 getting-started/rename-welcome-subtitle-text.patch
 getting-started/rename-app.patch
 telemetry/remove-default-telemetry.patch
+telemetry/disable-experiments.patch
+getting-started/remove-welcome-pages.patch
+getting-started/disable-auto-open.patch
