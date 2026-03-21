@@ -1,4 +1,4 @@
 
-rename/getting-started.patch
-telemetry/remove-default-telemetry.patch
 getting-started/rename-welcome-subtitle-text.patch
+getting-started/rename-app.patch
+telemetry/remove-default-telemetry.patch
