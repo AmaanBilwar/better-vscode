@@ -1,0 +1,33 @@
+diff --git a/product.json b/product.json
+index 48804f15226..45e9870a0dc 100644
+--- a/product.json
++++ b/product.json
+@@ -1,6 +1,6 @@
+ {
+-	"nameShort": "Code - OSS",
+-	"nameLong": "Code - OSS",
++	"nameShort": "Better VSCode",
++	"nameLong": "Better VSCode",
+ 	"applicationName": "code-oss",
+ 	"dataFolderName": ".vscode-oss",
+ 	"win32MutexName": "vscodeoss",
+diff --git a/test/unit/electron/index.js b/test/unit/electron/index.js
+old mode 100644
+new mode 100755
+index 842feb80e90..acf07d14078
+--- a/test/unit/electron/index.js
++++ b/test/unit/electron/index.js
+@@ -238,10 +238,10 @@ app.on('ready', () => {
+ 	// some of our types depend on it (e.g. product.ts).
+ 	ipcMain.handle('vscode:test-vscode-window-config', async () => {
+ 		return {
+-			product: {
++		product: {
+ 				version: '1.x.y',
+-				nameShort: 'Code - OSS Dev',
+-				nameLong: 'Code - OSS Dev',
++				nameShort: 'Better VSCode',
++				nameLong: 'Better VSCode',
+ 				applicationName: 'code-oss',
+ 				dataFolderName: '.vscode-oss',
+ 				urlProtocol: 'code-oss',
