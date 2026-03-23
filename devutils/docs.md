@@ -1,6 +1,9 @@
 ## Features: 
-1. NL search stuff - how to make it local?
-  - fff? telescope? semantic search? integrate `the-search-thing`?
-2. settings sync feature on my own infra?
-3. cloud changes for working files sync
-4. spawn task features like zed that we configure via `json`
+
+- add acp support to be able to use opencode, claude code, codex 
+- add native lazygit integration
+- spawn task features like zed that we configure via `json` configs
+- fff? telescope? semantic search? integrate [the-search-thing](https://github.com/AmaanBilwar/the-search-thing)?
+- settings sync feature on my own infra?
+- cloud changes for working files sync
+- NLP search stuff - how to make it local?
