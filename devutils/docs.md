@@ -1,3 +1,5 @@
+cmd+p and cmd_shift_p not workin anymore cuz we removed ai
+
 ## Features: 
 
 - add acp support to be able to use opencode, claude code, codex 
