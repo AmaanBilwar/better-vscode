@@ -125,7 +125,101 @@ def cmd_apply(args):
         log(f"\nAll {total} patches applied successfully.", "green")
 
 
+def _check_clean_tree(target):
+    """Ensure working tree has no uncommitted changes."""
+    result = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=target, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"Not a git repo: {target}")
+    if result.stdout.strip():
+        log("Working tree has uncommitted changes. Commit or stash first.", "red")
+        sys.exit(1)
+
+
+def _apply_baseline(target, series):
+    """Apply existing patches and commit as baseline. Returns True if baseline was created."""
+    if not series:
+        return False
+
+    log("Applying existing patches as baseline...", "cyan")
+    failed = []
+    for i, patch_rel in enumerate(series, 1):
+        patch_file = PATCHES_DIR / patch_rel
+        if not patch_file.exists():
+            log(f"  [{i}/{len(series)}] MISSING: {patch_rel}", "red")
+            failed.append(patch_rel)
+            continue
+        log(f"  [{i}/{len(series)}] {patch_rel}", "dim")
+        rc, _, _ = run_patch(patch_file, target, fuzz=True)
+        if rc != 0:
+            log(f"  FAILED: {patch_rel}", "red")
+            failed.append(patch_rel)
+    if failed:
+        log("Baseline patches failed. Fix them first.", "red")
+        sys.exit(1)
+
+    subprocess.run(["git", "add", "-A"], cwd=target, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "commit", "-m", "temp: baseline for patch generation", "--no-verify"],
+        cwd=target,
+        capture_output=True,
+        text=True,
+    )
+    log("Baseline committed.", "green")
+    return True
+
+
+def _reset_baseline(target, series):
+    """Revert baseline commit and reverse patches to restore original state."""
+    log("Resetting to original state...", "dim")
+    subprocess.run(
+        ["git", "reset", "--hard", "HEAD~1"], cwd=target, capture_output=True, text=True
+    )
+    for patch_rel in reversed(series):
+        patch_file = PATCHES_DIR / patch_rel
+        if patch_file.exists():
+            run_patch(patch_file, target, reverse=True)
+    subprocess.run(
+        ["git", "checkout", "--", "."], cwd=target, capture_output=True, text=True
+    )
+    subprocess.run(["git", "clean", "-fd"], cwd=target, capture_output=True, text=True)
+    log("Tree reset to original state.", "green")
+
+
+def cmd_setup(args):
+    """Apply existing patches and commit as baseline for patch generation."""
+    target = Path(args.target).resolve()
+    if not target.is_dir():
+        raise SystemExit(f"Target directory not found: {target}")
+
+    _check_clean_tree(target)
+
+    series = parse_series()
+    if not series:
+        log("No patches in series. Nothing to set up.", "yellow")
+        return
+
+    _apply_baseline(target, series)
+    log("\nReady. Make your changes, then run:", "cyan")
+    log(
+        f'  uv run utils/patches.py generate --target "{args.target}" --name <name>',
+        "dim",
+    )
+
+
+def cmd_teardown(args):
+    """Reset tree back to original state (undo setup)."""
+    target = Path(args.target).resolve()
+    if not target.is_dir():
+        raise SystemExit(f"Target directory not found: {target}")
+
+    series = parse_series()
+    _reset_baseline(target, series)
+
+
 def cmd_generate(args):
+    """Generate a patch from working changes against the baseline."""
     target = Path(args.target).resolve()
     if not target.is_dir():
         raise SystemExit(f"Target directory not found: {target}")
@@ -145,23 +239,25 @@ def cmd_generate(args):
         if resp != "y":
             return
 
-    # Check git repo
-    result = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=target, capture_output=True, text=True
+    # Check we're on the baseline commit (i.e., setup was run)
+    log_result = subprocess.run(
+        ["git", "log", "-1", "--format=%s"], cwd=target, capture_output=True, text=True
     )
-    if result.returncode != 0:
-        raise SystemExit(f"Not a git repo: {target}")
+    on_baseline = "temp: baseline for patch generation" in log_result.stdout
 
-    if result.stdout.strip() == "":
-        log("No changes detected. Nothing to generate.", "yellow")
-        return
+    if not on_baseline:
+        log("No baseline commit found. Run setup first:", "red")
+        log(f'  uv run utils/patches.py setup --target "{args.target}"', "yellow")
+        sys.exit(1)
 
-    # Generate diff
+    # Generate diff from baseline
     diff_result = subprocess.run(
         ["git", "diff", "HEAD"], cwd=target, capture_output=True, text=True
     )
     if not diff_result.stdout.strip():
-        log("No changes to generate.", "yellow")
+        log("No changes detected. Nothing to generate.", "yellow")
+        series = parse_series()
+        _reset_baseline(target, series)
         return
 
     patch_path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,6 +279,9 @@ def cmd_generate(args):
     )
     log("\nChanges in patch:", "cyan")
     print(stat.stdout)
+
+    # Reset tree
+    _reset_baseline(target, series)
 
 
 def cmd_sync(args):
@@ -251,13 +350,28 @@ def main():
     p_apply.add_argument("--dry-run", action="store_true", help="Dry run only")
     p_apply.add_argument("--fuzz", action=argparse.BooleanOptionalAction, default=True)
 
+    # setup
+    p_setup = sub.add_parser(
+        "setup", help="Apply patches and commit as baseline for generating a new patch"
+    )
+    p_setup.add_argument("--target", required=True, help="VS Code source tree")
+
     # generate
-    p_gen = sub.add_parser("generate", help="Generate a patch from working changes")
+    p_gen = sub.add_parser(
+        "generate",
+        help="Generate a patch from working changes (run after 'setup', before 'teardown')",
+    )
     p_gen.add_argument("--target", required=True, help="VS Code source tree")
     p_gen.add_argument(
         "--name", required=True, help="Patch name (e.g., 'remove-telemetry')"
     )
     p_gen.add_argument("--force", action="store_true", help="Overwrite existing patch")
+
+    # teardown
+    p_teardown = sub.add_parser(
+        "teardown", help="Reset tree back to original state (undo setup)"
+    )
+    p_teardown.add_argument("--target", required=True, help="VS Code source tree")
 
     # sync
     p_sync = sub.add_parser("sync", help="Sync fork with upstream microsoft/vscode")
@@ -275,9 +389,14 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    {"apply": cmd_apply, "generate": cmd_generate, "sync": cmd_sync, "list": cmd_list}[
-        args.command
-    ](args)
+    {
+        "apply": cmd_apply,
+        "setup": cmd_setup,
+        "generate": cmd_generate,
+        "teardown": cmd_teardown,
+        "sync": cmd_sync,
+        "list": cmd_list,
+    }[args.command](args)
 
 
 if __name__ == "__main__":
