@@ -29,7 +29,7 @@ index 0202df84fa9..8410b222a98 100644
  
  // Interactive
 diff --git a/src/vs/sessions/sessions.desktop.main.ts b/src/vs/sessions/sessions.desktop.main.ts
-index 15a27157211..46058a1cbe9 100644
+index 30e837d5951..91058623ffe 100644
 --- a/src/vs/sessions/sessions.desktop.main.ts
 +++ b/src/vs/sessions/sessions.desktop.main.ts
 @@ -176,8 +176,8 @@ import '../workbench/contrib/multiDiffEditor/browser/multiDiffEditor.contributio
@@ -52,35 +52,33 @@ index 15a27157211..46058a1cbe9 100644
  
  // Policy Export
  import '../workbench/contrib/policyExport/electron-browser/policyExport.contribution.js';
-@@ -200,10 +200,10 @@ import './browser/paneCompositePartService.js';
+@@ -200,9 +200,9 @@ import './browser/paneCompositePartService.js';
  import './browser/layoutActions.js';
  
  import './contrib/accountMenu/browser/account.contribution.js';
 -import './contrib/aiCustomizationTreeView/browser/aiCustomizationTreeView.contribution.js';
 -import './contrib/chat/browser/chat.contribution.js';
--import './contrib/chat/browser/chatSessionHeader.js';
 -import './contrib/chat/browser/customizationsDebugLog.contribution.js';
 +// import './contrib/aiCustomizationTreeView/browser/aiCustomizationTreeView.contribution.js';
 +// import './contrib/chat/browser/chat.contribution.js';
-+// import './contrib/chat/browser/chatSessionHeader.js';
 +// import './contrib/chat/browser/customizationsDebugLog.contribution.js';
  import './contrib/sessions/browser/sessions.contribution.js';
  import './contrib/sessions/browser/customizationsToolbar.contribution.js';
  import './contrib/changes/browser/changesView.contribution.js';
-@@ -216,7 +216,7 @@ import './contrib/configuration/browser/configuration.contribution.js';
+@@ -215,7 +215,7 @@ import './contrib/configuration/browser/configuration.contribution.js';
  
  import './contrib/terminal/browser/sessionsTerminalContribution.js';
  import './contrib/logs/browser/logs.contribution.js';
 -import './contrib/chatDebug/browser/chatDebug.contribution.js';
 +// import './contrib/chatDebug/browser/chatDebug.contribution.js';
  import './contrib/workspace/browser/workspace.contribution.js';
- import './contrib/welcome/browser/welcome.contribution.js';
+ // import './contrib/welcome/browser/welcome.contribution.js';
  
 diff --git a/src/vs/sessions/sessions.web.main.ts b/src/vs/sessions/sessions.web.main.ts
-index fc29d84bc36..4cb70f38265 100644
+index be32907bc88..b6f4b8929d2 100644
 --- a/src/vs/sessions/sessions.web.main.ts
 +++ b/src/vs/sessions/sessions.web.main.ts
-@@ -153,10 +153,10 @@ import './browser/paneCompositePartService.js';
+@@ -154,9 +154,9 @@ import './browser/paneCompositePartService.js';
  import './browser/layoutActions.js';
  
  import './contrib/accountMenu/browser/account.contribution.js';
@@ -88,17 +86,15 @@ index fc29d84bc36..4cb70f38265 100644
 +// import './contrib/aiCustomizationTreeView/browser/aiCustomizationTreeView.contribution.js';
  import './contrib/applyCommitsToParentRepo/browser/applyChangesToParentRepo.js';
 -import './contrib/chat/browser/chat.contribution.js';
--import './contrib/chat/browser/chatSessionHeader.js';
 +// import './contrib/chat/browser/chat.contribution.js';
-+// import './contrib/chat/browser/chatSessionHeader.js';
  import './contrib/terminal/browser/sessionsTerminalContribution.js';
  import './contrib/sessions/browser/sessions.contribution.js';
  import './contrib/sessions/browser/customizationsToolbar.contribution.js';
 diff --git a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
-index 6ab781a848d..be93b89b544 100644
+index 044678a421a..35968e2956b 100644
 --- a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
 +++ b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
-@@ -1258,7 +1258,8 @@ configurationRegistry.registerConfiguration({
+@@ -1265,7 +1265,8 @@ configurationRegistry.registerConfiguration({
  		[ChatConfiguration.AIDisabled]: {
  			type: 'boolean',
  			description: nls.localize('chat.disableAIFeatures', "Disable and hide built-in AI features provided by GitHub Copilot, including chat and inline suggestions."),
@@ -109,7 +105,7 @@ index 6ab781a848d..be93b89b544 100644
  		},
  		'chat.allowAnonymousAccess': { // TODO@bpasero remove me eventually
 diff --git a/src/vs/workbench/workbench.common.main.ts b/src/vs/workbench/workbench.common.main.ts
-index 1d89cb13a56..ed8ca42b9a4 100644
+index 6be4f5a3051..6fbe9639b82 100644
 --- a/src/vs/workbench/workbench.common.main.ts
 +++ b/src/vs/workbench/workbench.common.main.ts
 @@ -132,7 +132,7 @@ import './services/editor/browser/editorPaneService.js';
@@ -138,15 +134,6 @@ index 1d89cb13a56..ed8ca42b9a4 100644
  import './contrib/imageCarousel/browser/imageCarousel.contribution.js';
  
  // Interactive
-@@ -358,7 +358,7 @@ import './contrib/surveys/browser/languageSurveys.contribution.js';
- 
- // Welcome
- import './contrib/welcomeGettingStarted/browser/gettingStarted.contribution.js';
--import './contrib/welcomeAgentSessions/browser/agentSessionsWelcome.contribution.js';
-+// import './contrib/welcomeAgentSessions/browser/agentSessionsWelcome.contribution.js';
- import './contrib/welcomeWalkthrough/browser/walkThrough.contribution.js';
- import './contrib/welcomeViews/common/viewsWelcome.contribution.js';
- import './contrib/welcomeViews/common/newFile.contribution.js';
 diff --git a/src/vs/workbench/workbench.desktop.main.ts b/src/vs/workbench/workbench.desktop.main.ts
 index 5a5c36698c1..b760fee595a 100644
 --- a/src/vs/workbench/workbench.desktop.main.ts
