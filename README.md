@@ -27,12 +27,6 @@ git fetch upstream
 # Sync fork with upstream microsoft/vscode
 uv run utils/patches.py sync --vscode-dir "C:\...\coding\vscode" --force-push
 
-# Make changes in vscode, then generate a patch
-uv run utils/patches.py generate --target "C:\...\coding\vscode" --name debloat/remove-telemetry
-
-# Reset vscode back to clean state
-git checkout -- . && git clean -fd
-
 # Apply all patches to a clean vscode tree
 uv run utils/patches.py apply "C:\...\coding\vscode"
 
@@ -46,18 +40,36 @@ uv run utils/patches.py apply "C:\...\coding\vscode" --reverse
 uv run utils/patches.py list
 ```
 
+### Generating patches
+
+```bash
+# Step 1: Apply existing patches + commit as baseline
+uv run utils/patches.py setup --target "C:\...\coding\vscode"
+
+# Step 2: Make your changes in the vscode tree (edit files, etc.)
+
+# Step 3: Generate patch (diffs your changes against the baseline, then resets tree)
+uv run utils/patches.py generate --target "C:\...\coding\vscode" --name category/my-patch
+
+# Or if something goes wrong, reset manually:
+uv run utils/patches.py teardown --target "C:\...\coding\vscode"
+```
+
+`setup` applies all existing patches and commits them as a baseline. `generate` diffs only your new changes against that baseline, so patches never overlap with each other. The tree is automatically reset after generation.
+
 ## Workflows
 
 ### Adding a new change
 1. Sync: `uv run utils/patches.py sync --vscode-dir "..."`
-2. Edit files in vscode
-3. Generate: `uv run utils/patches.py generate --target "..." --name category/name`
-4. Clean: `git checkout -- . && git clean -fd` in vscode
+2. Setup: `uv run utils/patches.py setup --target "..."`
+3. Edit files in vscode
+4. Generate: `uv run utils/patches.py generate --target "..." --name category/name`
+   (tree is auto-reset after generation)
 
 ### Upstream VS Code updates
 1. Sync: `uv run utils/patches.py sync --vscode-dir "..."`
 2. Apply: `uv run utils/patches.py apply "..."`
-3. If patches fail: fix in vscode, regenerate with `generate`, clean again
+3. If patches fail: fix in vscode, regenerate with `setup` → edit → `generate`
 
 ### Building
 1. `uv run utils/patches.py apply "..."`
