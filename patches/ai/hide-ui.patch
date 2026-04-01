@@ -1,0 +1,81 @@
+diff --git a/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentSessionsExperiments.contribution.ts b/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentSessionsExperiments.contribution.ts
+index 4e1d91d4927..f38199eec18 100644
+--- a/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentSessionsExperiments.contribution.ts
++++ b/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentSessionsExperiments.contribution.ts
+@@ -248,11 +248,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandCenter, {
+ 	submenu: MenuId.AgentsTitleBarControlMenu,
+ 	title: localize('agentsControl', "Agents"),
+ 	icon: Codicon.chatSparkle,
+-	when: ContextKeyExpr.and(
+-		ChatContextKeys.enabled,
+-		ContextKeyExpr.notEquals(`config.${ChatConfiguration.AgentStatusEnabled}`, 'hidden'),
+-		ContextKeyExpr.notEquals(`config.${ChatConfiguration.AgentStatusEnabled}`, false)
+-	),
++	when: ContextKeyExpr.false(),
+ 	order: 10002 // to the right of the chat button
+ });
+ 
+diff --git a/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentTitleBarStatusWidget.ts b/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentTitleBarStatusWidget.ts
+index 94f513e7741..d8856a64ae0 100644
+--- a/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentTitleBarStatusWidget.ts
++++ b/src/vs/workbench/contrib/chat/browser/agentSessions/experiments/agentTitleBarStatusWidget.ts
+@@ -1450,7 +1450,7 @@ export class AgentTitleBarStatusRendering extends Disposable implements IWorkben
+ 			const commandCenterEnabled = configurationService.getValue<boolean>(LayoutSettings.COMMAND_CENTER) === true;
+ 			const statusMode = getAgentStatusSettingMode(configurationService);
+ 			const enabled = commandCenterEnabled && chatEnabled && statusMode !== 'hidden';
+-			const enhanced = enabled && statusMode === 'compact';
++			const enhanced = false;
+ 
+ 			mainWindow.document.body.classList.toggle('agent-status-enabled', enabled);
+ 			mainWindow.document.body.classList.toggle('unified-agents-bar', enhanced);
+diff --git a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
+index 06e553b2528..2884a5de69a 100644
+--- a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
++++ b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
+@@ -1893,7 +1893,7 @@ registerWorkbenchContribution2(ChatViewsWelcomeHandler.ID, ChatViewsWelcomeHandl
+ registerWorkbenchContribution2(ChatGettingStartedContribution.ID, ChatGettingStartedContribution, WorkbenchPhase.Eventually);
+ registerWorkbenchContribution2(ChatSetupContribution.ID, ChatSetupContribution, WorkbenchPhase.BlockRestore);
+ registerWorkbenchContribution2(ChatTeardownContribution.ID, ChatTeardownContribution, WorkbenchPhase.AfterRestored);
+-registerWorkbenchContribution2(ChatStatusBarEntry.ID, ChatStatusBarEntry, WorkbenchPhase.BlockRestore);
++// registerWorkbenchContribution2(ChatStatusBarEntry.ID, ChatStatusBarEntry, WorkbenchPhase.BlockRestore);
+ registerWorkbenchContribution2(BuiltinToolsContribution.ID, BuiltinToolsContribution, WorkbenchPhase.Eventually);
+ registerWorkbenchContribution2(UsagesToolContribution.ID, UsagesToolContribution, WorkbenchPhase.BlockRestore);
+ registerWorkbenchContribution2(RenameToolContribution.ID, RenameToolContribution, WorkbenchPhase.BlockRestore);
+diff --git a/src/vs/workbench/contrib/editTelemetry/browser/editStats/aiStatsFeature.ts b/src/vs/workbench/contrib/editTelemetry/browser/editStats/aiStatsFeature.ts
+index 922e0ac5acd..b9180ba08b2 100644
+--- a/src/vs/workbench/contrib/editTelemetry/browser/editStats/aiStatsFeature.ts
++++ b/src/vs/workbench/contrib/editTelemetry/browser/editStats/aiStatsFeature.ts
+@@ -7,13 +7,11 @@ import { sumBy } from '../../../../../base/common/arrays.js';
+ import { TaskQueue, timeout } from '../../../../../base/common/async.js';
+ import { Lazy } from '../../../../../base/common/lazy.js';
+ import { Disposable, DisposableStore, toDisposable } from '../../../../../base/common/lifecycle.js';
+-import { autorun, derived, mapObservableArrayCached, observableValue, runOnChange } from '../../../../../base/common/observable.js';
++import { derived, mapObservableArrayCached, observableValue, runOnChange } from '../../../../../base/common/observable.js';
+ import { AnnotatedStringEdit } from '../../../../../editor/common/core/edits/stringEdit.js';
+ import { isAiEdit, isUserEdit } from '../../../../../editor/common/textModelEditSource.js';
+-import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+ import { IStorageService, StorageScope, StorageTarget } from '../../../../../platform/storage/common/storage.js';
+ import { AnnotatedDocuments } from '../helpers/annotatedDocuments.js';
+-import { AiStatsStatusBar } from './aiStatsStatusBar.js';
+ 
+ export class AiStatsFeature extends Disposable {
+ 	private readonly _data: IValue<IData>;
+@@ -22,7 +20,6 @@ export class AiStatsFeature extends Disposable {
+ 	constructor(
+ 		annotatedDocuments: AnnotatedDocuments,
+ 		@IStorageService private readonly _storageService: IStorageService,
+-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+ 	) {
+ 		super();
+ 
+@@ -31,10 +28,6 @@ export class AiStatsFeature extends Disposable {
+ 
+ 		this.aiRate.recomputeInitiallyAndOnChange(this._store);
+ 
+-		this._register(autorun(reader => {
+-			reader.store.add(this._instantiationService.createInstance(AiStatsStatusBar.hot.read(reader), this));
+-		}));
+-
+ 
+ 		const lastRequestIds: string[] = [];
+ 
