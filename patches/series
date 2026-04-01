@@ -4,4 +4,4 @@ telemetry/remove-default-telemetry.patch
 telemetry/disable-experiments.patch
 getting-started/remove-welcome-pages.patch
 getting-started/disable-auto-open.patch
-chat/disable-ai-chat.patch
+chat/hide-ai-chat.patch
