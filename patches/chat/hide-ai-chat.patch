@@ -1,0 +1,219 @@
+diff --git a/src/vs/sessions/contrib/chat/browser/chat.contribution.ts b/src/vs/sessions/contrib/chat/browser/chat.contribution.ts
+index 314bd21d348..ff0b386e297 100644
+--- a/src/vs/sessions/contrib/chat/browser/chat.contribution.ts
++++ b/src/vs/sessions/contrib/chat/browser/chat.contribution.ts
+@@ -17,7 +17,7 @@ import { IViewContainersRegistry, IViewsRegistry, ViewContainerLocation, Extensi
+ import { Registry } from '../../../../platform/registry/common/platform.js';
+ import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+ import { ISessionsManagementService } from '../../sessions/browser/sessionsManagementService.js';
+-import { IsActiveSessionBackgroundProviderContext, IsNewChatSessionContext, SessionsWelcomeVisibleContext } from '../../../common/contextkeys.js';
++import { IsActiveSessionBackgroundProviderContext, SessionsWelcomeVisibleContext } from '../../../common/contextkeys.js';
+ import { Menus } from '../../../browser/menus.js';
+ import { BranchChatSessionAction } from './branchChatSessionAction.js';
+ import { RunScriptContribution } from './runScriptAction.js';
+@@ -170,7 +170,7 @@ class RegisterChatViewContainerContribution implements IWorkbenchContribution {
+ 			canToggleVisibility: false,
+ 			canMoveView: false,
+ 			ctorDescriptor: new SyncDescriptor(ChatViewPane),
+-			when: IsNewChatSessionContext.negate(),
++			when: ContextKeyExpr.false(),
+ 			windowVisibility: WindowVisibility.Sessions
+ 		}, {
+ 			id: SessionsViewId,
+@@ -181,7 +181,7 @@ class RegisterChatViewContainerContribution implements IWorkbenchContribution {
+ 			canToggleVisibility: false,
+ 			canMoveView: false,
+ 			ctorDescriptor: new SyncDescriptor(NewChatViewPane),
+-			when: IsNewChatSessionContext,
++			when: ContextKeyExpr.false(),
+ 			windowVisibility: WindowVisibility.Sessions,
+ 		}], chatViewContainer);
+ 	}
+diff --git a/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts b/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
+index 2c89110cf8c..ac32a107c78 100644
+--- a/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
++++ b/src/vs/workbench/contrib/chat/browser/actions/chatActions.ts
+@@ -203,10 +203,7 @@ abstract class OpenChatGlobalAction extends Action2 {
+ 			icon: Codicon.chatSparkle,
+ 			f1: true,
+ 			category: CHAT_CATEGORY,
+-			precondition: ContextKeyExpr.and(
+-				ChatContextKeys.Setup.hidden.negate(),
+-				ChatContextKeys.Setup.disabled.negate()
+-			)
++			precondition: ContextKeyExpr.false()
+ 		});
+ 	}
+ 
+@@ -536,19 +533,12 @@ function getPendingConfirmationInfo(response: IChatResponseModel): IChatPendingC
+ 
+ class PrimaryOpenChatGlobalAction extends OpenChatGlobalAction {
+ 	constructor() {
+-		super({
+-			id: CHAT_OPEN_ACTION_ID,
+-			title: localize2('openChat', "Open Chat"),
+-			keybinding: {
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyI,
+-				mac: {
+-					primary: KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyI
+-				}
+-			},
+-			menu: [{
+-				id: MenuId.ChatTitleBarMenu,
+-				group: 'a_open',
++			super({
++				id: CHAT_OPEN_ACTION_ID,
++				title: localize2('openChat', "Open Chat"),
++				menu: [{
++					id: MenuId.ChatTitleBarMenu,
++					group: 'a_open',
+ 				order: 1
+ 			}]
+ 		});
+@@ -569,23 +559,16 @@ export abstract class ModeOpenChatGlobalAction extends OpenChatGlobalAction {
+ 	}
+ }
+ 
+-export function registerChatActions() {
+-	registerAction2(PrimaryOpenChatGlobalAction);
+-	registerAction2(class extends ModeOpenChatGlobalAction {
+-		constructor() { super(ChatMode.Ask); }
+-	});
+-	registerAction2(class extends ModeOpenChatGlobalAction {
+-		constructor() {
+-			super(ChatMode.Agent, {
+-				when: ContextKeyExpr.has(`config.${ChatConfiguration.AgentEnabled}`),
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyI,
+-				linux: {
+-					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyMod.Shift | KeyCode.KeyI
+-				}
+-			},);
+-		}
+-	});
++	export function registerChatActions() {
++		registerAction2(PrimaryOpenChatGlobalAction);
++		registerAction2(class extends ModeOpenChatGlobalAction {
++			constructor() { super(ChatMode.Ask); }
++		});
++		registerAction2(class extends ModeOpenChatGlobalAction {
++			constructor() {
++				super(ChatMode.Agent);
++			}
++		});
+ 	registerAction2(class extends ModeOpenChatGlobalAction {
+ 		constructor() { super(ChatMode.Edit); }
+ 	});
+diff --git a/src/vs/workbench/contrib/chat/browser/actions/chatQuickInputActions.ts b/src/vs/workbench/contrib/chat/browser/actions/chatQuickInputActions.ts
+index 21f8bc6191e..61b0ba3f016 100644
+--- a/src/vs/workbench/contrib/chat/browser/actions/chatQuickInputActions.ts
++++ b/src/vs/workbench/contrib/chat/browser/actions/chatQuickInputActions.ts
+@@ -4,15 +4,13 @@
+  *--------------------------------------------------------------------------------------------*/
+ 
+ import { Codicon } from '../../../../../base/common/codicons.js';
+-import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+ import { Selection } from '../../../../../editor/common/core/selection.js';
+ import { localize, localize2 } from '../../../../../nls.js';
+ import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
++import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+ import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+-import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+ import { CHAT_CATEGORY } from './chatActions.js';
+ import { IQuickChatOpenOptions, IQuickChatService } from '../chat.js';
+-import { ChatContextKeys } from '../../common/actions/chatContextKeys.js';
+ 
+ export const ASK_QUICK_QUESTION_ACTION_ID = 'workbench.action.quickchat.toggle';
+ export function registerQuickChatActions() {
+@@ -67,20 +65,16 @@ export function registerQuickChatActions() {
+ 
+ class QuickChatGlobalAction extends Action2 {
+ 	constructor() {
+-		super({
+-			id: ASK_QUICK_QUESTION_ACTION_ID,
+-			title: localize2('quickChat', 'Open Quick Chat'),
+-			precondition: ChatContextKeys.enabled,
+-			icon: Codicon.chatSparkle,
+-			f1: false,
+-			category: CHAT_CATEGORY,
+-			keybinding: {
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyMod.Alt | KeyCode.KeyL,
+-			},
+-			menu: {
+-				id: MenuId.ChatTitleBarMenu,
+-				group: 'a_open',
++			super({
++				id: ASK_QUICK_QUESTION_ACTION_ID,
++				title: localize2('quickChat', 'Open Quick Chat'),
++				precondition: ContextKeyExpr.false(),
++				icon: Codicon.chatSparkle,
++				f1: false,
++				category: CHAT_CATEGORY,
++				menu: {
++					id: MenuId.ChatTitleBarMenu,
++					group: 'a_open',
+ 				order: 4
+ 			},
+ 			metadata: {
+@@ -130,14 +124,14 @@ class QuickChatGlobalAction extends Action2 {
+ 
+ class AskQuickChatAction extends Action2 {
+ 	constructor() {
+-		super({
+-			id: `workbench.action.openQuickChat`,
+-			category: CHAT_CATEGORY,
+-			title: localize2('interactiveSession.open', "Open Quick Chat"),
+-			precondition: ChatContextKeys.enabled,
+-			f1: true
+-		});
+-	}
++			super({
++				id: `workbench.action.openQuickChat`,
++				category: CHAT_CATEGORY,
++				title: localize2('interactiveSession.open', "Open Quick Chat"),
++				precondition: ContextKeyExpr.false(),
++				f1: true
++			});
++		}
+ 
+ 	override run(accessor: ServicesAccessor, query?: string): void {
+ 		const quickChatService = accessor.get(IQuickChatService);
+diff --git a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts b/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
+index ddb5df41847..1c689a0b233 100644
+--- a/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
++++ b/src/vs/workbench/contrib/chat/browser/chatParticipant.contribution.ts
+@@ -8,7 +8,6 @@ import { Codicon } from '../../../../base/common/codicons.js';
+ import { toErrorMessage } from '../../../../base/common/errorMessage.js';
+ import { Event } from '../../../../base/common/event.js';
+ import { createCommandUri, MarkdownString } from '../../../../base/common/htmlContent.js';
+-import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
+ import { Disposable, DisposableMap, DisposableStore } from '../../../../base/common/lifecycle.js';
+ import * as strings from '../../../../base/common/strings.js';
+ import { localize, localize2 } from '../../../../nls.js';
+@@ -59,23 +58,10 @@ const chatViewDescriptor: IViewDescriptor = {
+ 		id: ChatViewContainerId,
+ 		title: chatViewContainer.title,
+ 		mnemonicTitle: localize({ key: 'miToggleChat', comment: ['&& denotes a mnemonic'] }, "&&Chat"),
+-		keybindings: {
+-			primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyI,
+-			mac: {
+-				primary: KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyI
+-			}
+-		},
+ 		order: 1
+ 	},
+ 	ctorDescriptor: new SyncDescriptor(ChatViewPane),
+-	when: ContextKeyExpr.or(
+-		ContextKeyExpr.or(
+-			ChatContextKeys.Setup.hidden,
+-			ChatContextKeys.Setup.disabled
+-		)?.negate(),
+-		ChatContextKeys.panelParticipantRegistered,
+-		ChatContextKeys.extensionInvalid
+-	)
++	when: ContextKeyExpr.false()
+ };
+ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([chatViewDescriptor], chatViewContainer);
+ 
