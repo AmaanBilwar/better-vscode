@@ -1,7 +1,9 @@
 # Better-VSCode
 
-Uses a patch system similar to [Helium](https://github/imputnet/helium), where i use patches to make changes to the vscode fork and dsitribute binaries
+opinionated vs code where i try to remove all the bs and keep things i like about vscode(there aren't very many left). the goal is to make it private, relatively faster, and debloated.
 
+# how it works
+Uses a patch system similar to [Helium](https://github/imputnet/helium), where i use patches to make changes to the vscode fork and dsitribute binaries
 
 [AmaanBilwar/vscode](https://github.com/AmaanBilwar/vscode) - clean fork of microsoft/vscode(source code)
 
