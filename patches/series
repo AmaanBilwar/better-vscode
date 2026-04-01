@@ -5,3 +5,4 @@ telemetry/disable-experiments.patch
 getting-started/remove-welcome-pages.patch
 getting-started/disable-auto-open.patch
 chat/hide-ai-chat.patch
+ai/hide-ui.patch
