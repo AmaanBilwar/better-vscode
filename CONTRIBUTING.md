@@ -45,6 +45,26 @@ uv run utils/patches.py teardown --target "C:\...\coding\vscode"
 2. Apply: `uv run utils/patches.py apply "..."`
 3. If patches fail: fix in vscode, regenerate with `setup` -> edit -> `generate`
 
+### In case applying a patch fails
+
+When syncing with upstream, a patch can fail because file context changed (line moves, nearby edits).
+Use this quick recovery flow to regenerate only the failing patch.
+
+1. Identify the failing patch from `uv run utils/patches.py apply "..."`
+2. Temporarily remove (or comment) that patch from `patches/series`
+3. Create baseline without the failing patch:
+   `uv run utils/patches.py setup --target "C:\...\coding\vscode"`
+4. In the vscode tree, try applying the old patch to salvage non-conflicting hunks:
+   `git apply --reject --whitespace=nowarn "C:\...\coding\better-vscode\patches\category\name.patch"`
+5. Fix rejected hunks manually in vscode (for example, after upstream line shifts)
+6. Regenerate the same patch name (overwrite):
+   `uv run utils/patches.py generate --target "C:\...\coding\vscode" --name category/name --force`
+7. Add the patch back to `patches/series` in its original position
+8. Validate:
+   `uv run utils/patches.py apply "C:\...\coding\vscode" --dry-run`
+
+This keeps patch history clean and avoids rebuilding unrelated patches.
+
 ### Building
 1. `uv run utils/patches.py apply "..."`
 2. Build vscode as usual
