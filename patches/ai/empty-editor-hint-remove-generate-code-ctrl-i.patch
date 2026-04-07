@@ -1,0 +1,99 @@
+diff --git a/src/vs/workbench/browser/workbench.contribution.ts b/src/vs/workbench/browser/workbench.contribution.ts
+index 9298759b9fb..d448af9fdb6 100644
+--- a/src/vs/workbench/browser/workbench.contribution.ts
++++ b/src/vs/workbench/browser/workbench.contribution.ts
+@@ -164,7 +164,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).regis
+ 			'workbench.editor.empty.hint': {
+ 				'type': 'string',
+ 				'enum': ['text', 'hidden'],
+-				'default': 'hidden',
++				'default': 'text',
+ 				'markdownDescription': localize("workbench.editor.empty.hint", "Controls if the empty editor text hint should be visible in the editor.")
+ 			},
+ 			'workbench.editor.empty.indicator': {
+diff --git a/src/vs/workbench/contrib/codeEditor/browser/emptyTextEditorHint/emptyTextEditorHint.ts b/src/vs/workbench/contrib/codeEditor/browser/emptyTextEditorHint/emptyTextEditorHint.ts
+index 1e42e3c27a0..030cad01b13 100644
+--- a/src/vs/workbench/contrib/codeEditor/browser/emptyTextEditorHint/emptyTextEditorHint.ts
++++ b/src/vs/workbench/contrib/codeEditor/browser/emptyTextEditorHint/emptyTextEditorHint.ts
+@@ -22,7 +22,6 @@ import { ICommandService } from '../../../../../platform/commands/common/command
+ import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
+ import { IContextMenuService } from '../../../../../platform/contextview/browser/contextView.js';
+ import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+-import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
+ import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
+ import { ChangeLanguageAction } from '../../../../browser/parts/editor/editorStatus.js';
+ import { LOG_MODE_ID, OUTPUT_MODE_ID } from '../../../../services/output/common/output.js';
+@@ -142,7 +141,6 @@ class EmptyTextEditorHintContentWidget extends Disposable implements IContentWid
+ 		private readonly editor: ICodeEditor,
+ 		@ICommandService private readonly commandService: ICommandService,
+ 		@IConfigurationService private readonly configurationService: IConfigurationService,
+-		@IKeybindingService private readonly keybindingService: IKeybindingService,
+ 		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+ 		@ITelemetryService private readonly telemetryService: ITelemetryService,
+ 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
+@@ -205,12 +203,9 @@ class EmptyTextEditorHintContentWidget extends Disposable implements IContentWid
+ 			callback: (index, event) => {
+ 				switch (index) {
+ 					case '0':
+-						hasInlineChatProvider ? askSomething(event.browserEvent) : languageOnClickOrTap(event.browserEvent);
++						languageOnClickOrTap(event.browserEvent);
+ 						break;
+ 					case '1':
+-						hasInlineChatProvider ? languageOnClickOrTap(event.browserEvent) : this.disableHint();
+-						break;
+-					case '2':
+ 						this.disableHint();
+ 						break;
+ 				}
+@@ -218,15 +213,6 @@ class EmptyTextEditorHintContentWidget extends Disposable implements IContentWid
+ 		};
+ 
+ 		// the actual command handlers...
+-		const askSomethingCommandId = 'inlineChat.start';
+-		const askSomething = async (e: UIEvent) => {
+-			e.stopPropagation();
+-			this.telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>('workbenchActionExecuted', {
+-				id: askSomethingCommandId,
+-				from: 'hint'
+-			});
+-			await this.commandService.executeCommand(askSomethingCommandId, { from: 'hint' });
+-		};
+ 		const languageOnClickOrTap = async (e: UIEvent) => {
+ 			e.stopPropagation();
+ 			// Need to focus editor before so current editor becomes active and the command is properly executed
+@@ -239,22 +225,19 @@ class EmptyTextEditorHintContentWidget extends Disposable implements IContentWid
+ 			this.editor.focus();
+ 		};
+ 
+-		const keybindingsLookup = [askSomethingCommandId, ChangeLanguageAction.ID];
+-		const keybindingLabels = keybindingsLookup.map(id => this.keybindingService.lookupKeybinding(id)?.getLabel());
+-
+ 		const hintMsg = (hasInlineChatProvider ? localize({
+ 			key: 'emptyTextEditorHintWithInlineChat',
+ 			comment: [
+ 				'Preserve double-square brackets and their order',
+ 				'language refers to a programming language'
+ 			]
+-		}, '[[Generate code]] ({0}), or [[select a language]] ({1}). Start typing to dismiss or [[don\'t show]] this again.', keybindingLabels.at(0) ?? '', keybindingLabels.at(1) ?? '') : localize({
++		}, '[[Select a language]] to get started. Start typing to dismiss or [[don\'t show]] this again.') : localize({
+ 			key: 'emptyTextEditorHintWithoutInlineChat',
+ 			comment: [
+ 				'Preserve double-square brackets and their order',
+ 				'language refers to a programming language'
+ 			]
+-		}, '[[Select a language]] ({0}) to get started. Start typing to dismiss or [[don\'t show]] this again.', keybindingLabels.at(1) ?? '')).replaceAll(' ()', '');
++		}, '[[Select a language]] to get started. Start typing to dismiss or [[don\'t show]] this again.')).replaceAll(' ()', '');
+ 		const hintElement = renderFormattedText(hintMsg, {
+ 			actionHandler: hintHandler,
+ 			renderCodeSegments: false,
+@@ -262,8 +245,8 @@ class EmptyTextEditorHintContentWidget extends Disposable implements IContentWid
+ 		hintElement.style.fontStyle = 'italic';
+ 
+ 		const ariaLabel = hasInlineChatProvider ?
+-			localize('defaultHintAriaLabelWithInlineChat', 'Execute {0} to ask a question, execute {1} to select a language and get started. Start typing to dismiss.', ...keybindingLabels) :
+-			localize('defaultHintAriaLabelWithoutInlineChat', 'Execute {0} to select a language and get started. Start typing to dismiss.', ...keybindingLabels);
++			localize('defaultHintAriaLabelWithInlineChat', 'Select a language to get started. Start typing to dismiss.') :
++			localize('defaultHintAriaLabelWithoutInlineChat', 'Select a language to get started. Start typing to dismiss.');
+ 		// eslint-disable-next-line no-restricted-syntax
+ 		for (const anchor of hintElement.querySelectorAll('a')) {
+ 			anchor.style.cursor = 'pointer';

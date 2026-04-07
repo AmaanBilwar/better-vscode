@@ -1,0 +1,130 @@
+diff --git a/src/vs/workbench/contrib/chat/electron-browser/actions/voiceChatActions.ts b/src/vs/workbench/contrib/chat/electron-browser/actions/voiceChatActions.ts
+index bf4af290a4b..2fd1b21a683 100644
+--- a/src/vs/workbench/contrib/chat/electron-browser/actions/voiceChatActions.ts
++++ b/src/vs/workbench/contrib/chat/electron-browser/actions/voiceChatActions.ts
+@@ -9,11 +9,10 @@ import { CancellationToken, CancellationTokenSource } from '../../../../../base/
+ import { Codicon } from '../../../../../base/common/codicons.js';
+ import { Color } from '../../../../../base/common/color.js';
+ import { Event } from '../../../../../base/common/event.js';
+-import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
++import { KeyCode } from '../../../../../base/common/keyCodes.js';
+ import { Disposable, DisposableStore, MutableDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
+ import { isNumber } from '../../../../../base/common/types.js';
+ import { getCodeEditor } from '../../../../../editor/browser/editorBrowser.js';
+-import { EditorContextKeys } from '../../../../../editor/common/editorContextKeys.js';
+ import { localize, localize2 } from '../../../../../nls.js';
+ import { IAccessibilityService } from '../../../../../platform/accessibility/common/accessibility.js';
+ import { Action2, IAction2Options, MenuId } from '../../../../../platform/actions/common/actions.js';
+@@ -38,10 +37,7 @@ import { IWorkbenchLayoutService, Parts } from '../../../../services/layout/brow
+ import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from '../../../../services/statusbar/browser/statusbar.js';
+ import { AccessibilityVoiceSettingId, SpeechTimeoutDefault, accessibilityConfigurationNodeBase } from '../../../accessibility/browser/accessibilityConfiguration.js';
+ import { InlineChatController } from '../../../inlineChat/browser/inlineChatController.js';
+-import { CTX_INLINE_CHAT_FOCUSED, MENU_INLINE_CHAT_WIDGET_SECONDARY } from '../../../inlineChat/common/inlineChat.js';
+-import { NOTEBOOK_EDITOR_FOCUSED } from '../../../notebook/common/notebookContextKeys.js';
+-import { CONTEXT_SETTINGS_EDITOR } from '../../../preferences/common/preferences.js';
+-import { SearchContext } from '../../../search/common/constants.js';
++import { MENU_INLINE_CHAT_WIDGET_SECONDARY } from '../../../inlineChat/common/inlineChat.js';
+ import { TextToSpeechInProgress as GlobalTextToSpeechInProgress, HasSpeechProvider, ISpeechService, KeywordRecognitionStatus, SpeechToTextInProgress, SpeechToTextStatus, TextToSpeechStatus } from '../../../speech/common/speechService.js';
+ import { CHAT_CATEGORY } from '../../browser/actions/chatActions.js';
+ import { IChatExecuteActionContext } from '../../browser/actions/chatExecuteActions.js';
+@@ -62,8 +58,6 @@ const VoiceChatSessionContexts: VoiceChatSessionContext[] = ['view', 'inline', '
+ 
+ // Global Context Keys (set on global context key service)
+ const CanVoiceChat = ContextKeyExpr.and(ChatContextKeys.enabled, HasSpeechProvider);
+-const FocusInChatInput = ContextKeyExpr.or(CTX_INLINE_CHAT_FOCUSED, ChatContextKeys.inChatInput);
+-
+ // Scoped Context Keys (set on per-chat-context scoped context key service)
+ const ScopedVoiceChatGettingReady = new RawContextKey<boolean>('scopedVoiceChatGettingReady', false, { type: 'boolean', description: localize('scopedVoiceChatGettingReady', "True when getting ready for receiving voice input from the microphone for voice chat. This key is only defined scoped, per chat context.") });
+ const ScopedVoiceChatInProgress = new RawContextKey<VoiceChatSessionContext | undefined>('scopedVoiceChatInProgress', undefined, { type: 'string', description: localize('scopedVoiceChatInProgress', "Defined as a location where voice recording from microphone is in progress for voice chat. This key is only defined scoped, per chat context.") });
+@@ -442,24 +436,12 @@ export class HoldToVoiceChatInChatViewAction extends Action2 {
+ 	static readonly ID = 'workbench.action.chat.holdToVoiceChatInChatView';
+ 
+ 	constructor() {
+-		super({
+-			id: HoldToVoiceChatInChatViewAction.ID,
+-			title: localize2('workbench.action.chat.holdToVoiceChatInChatView.label', "Hold to Voice Chat in Chat View"),
+-			keybinding: {
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				when: ContextKeyExpr.and(
+-					CanVoiceChat,
+-					ChatContextKeys.requestInProgress.negate(), 	// disable when a chat request is in progress
+-					FocusInChatInput?.negate(),						// when already in chat input, disable this action and prefer to start voice chat directly
+-					EditorContextKeys.focus.negate(), 				// do not steal the inline-chat keybinding
+-					NOTEBOOK_EDITOR_FOCUSED.negate(),				// do not steal the notebook keybinding
+-					SearchContext.SearchViewFocusedKey.negate(),	// do not steal the search keybinding
+-					CONTEXT_SETTINGS_EDITOR.negate(),				// do not steal the settings editor keybinding
+-				),
+-				primary: KeyMod.CtrlCmd | KeyCode.KeyI
+-			}
+-		});
+-	}
++			super({
++				id: HoldToVoiceChatInChatViewAction.ID,
++				title: localize2('workbench.action.chat.holdToVoiceChatInChatView.label', "Hold to Voice Chat in Chat View"),
++				keybinding: undefined
++			});
++		}
+ 
+ 	override async run(accessor: ServicesAccessor, context?: IChatExecuteActionContext): Promise<void> {
+ 
+@@ -548,21 +530,13 @@ export class StartVoiceChatAction extends Action2 {
+ 	static readonly ID = 'workbench.action.chat.startVoiceChat';
+ 
+ 	constructor() {
+-		super({
+-			id: StartVoiceChatAction.ID,
+-			title: localize2('workbench.action.chat.startVoiceChat.label', "Start Voice Chat"),
+-			category: CHAT_CATEGORY,
+-			f1: true,
+-			keybinding: {
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				when: ContextKeyExpr.and(
+-					FocusInChatInput,					// scope this action to chat input fields only
+-					EditorContextKeys.focus.negate(), 	// do not steal the editor inline-chat keybinding
+-					NOTEBOOK_EDITOR_FOCUSED.negate()	// do not steal the notebook inline-chat keybinding
+-				),
+-				primary: KeyMod.CtrlCmd | KeyCode.KeyI
+-			},
+-			icon: Codicon.mic,
++			super({
++				id: StartVoiceChatAction.ID,
++				title: localize2('workbench.action.chat.startVoiceChat.label', "Start Voice Chat"),
++				category: CHAT_CATEGORY,
++				f1: true,
++				keybinding: undefined,
++				icon: Codicon.mic,
+ 			precondition: ContextKeyExpr.and(
+ 				CanVoiceChat,
+ 				ScopedVoiceChatGettingReady.negate(),	// disable when voice chat is getting ready
+@@ -621,22 +595,15 @@ export class StopListeningAndSubmitAction extends Action2 {
+ 	static readonly ID = 'workbench.action.chat.stopListeningAndSubmit';
+ 
+ 	constructor() {
+-		super({
+-			id: StopListeningAndSubmitAction.ID,
+-			title: localize2('workbench.action.chat.stopListeningAndSubmit.label', "Stop Listening and Submit"),
+-			category: CHAT_CATEGORY,
+-			f1: true,
+-			keybinding: {
+-				weight: KeybindingWeight.WorkbenchContrib,
+-				when: ContextKeyExpr.and(
+-					FocusInChatInput,
+-					AnyScopedVoiceChatInProgress
+-				),
+-				primary: KeyMod.CtrlCmd | KeyCode.KeyI
+-			},
+-			precondition: GlobalVoiceChatInProgress // need global context here because of `f1: true`
+-		});
+-	}
++			super({
++				id: StopListeningAndSubmitAction.ID,
++				title: localize2('workbench.action.chat.stopListeningAndSubmit.label', "Stop Listening and Submit"),
++				category: CHAT_CATEGORY,
++				f1: true,
++				keybinding: undefined,
++				precondition: GlobalVoiceChatInProgress // need global context here because of `f1: true`
++			});
++		}
+ 
+ 	run(accessor: ServicesAccessor): void {
+ 		VoiceChatSessions.getInstance(accessor.get(IInstantiationService)).accept();

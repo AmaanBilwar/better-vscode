@@ -6,3 +6,7 @@ getting-started/remove-welcome-pages.patch
 getting-started/disable-auto-open.patch
 chat/hide-ai-chat.patch
 ai/hide-ui.patch
+ai/empty-editor-hint-remove-generate-code-ctrl-i.patch
+ai/remove-ctrl-i-keybindings-chat-surfaces.patch
+ai/remove-ctrl-i-voice-chat.patch
+ai/fix-watch-client-chat-contribution-playwright.patch

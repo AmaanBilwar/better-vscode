@@ -1,0 +1,25 @@
+diff --git a/src/vs/platform/browserView/node/playwrightTab.ts b/src/vs/platform/browserView/node/playwrightTab.ts
+index ceddf207a6e..b3fb9167423 100644
+--- a/src/vs/platform/browserView/node/playwrightTab.ts
++++ b/src/vs/platform/browserView/node/playwrightTab.ts
+@@ -204,7 +204,7 @@ export class PlaywrightTab {
+ 	}
+ 
+ 	private getAiSnapshot(page: playwright.Page, full: boolean): Promise<string> {
+-		const options: IAiAriaSnapshotOptions = { mode: 'ai' };
++		const options: IAiAriaSnapshotOptions = {};
+ 		if (!full) {
+ 			options._track = 'response';
+ 		}
+diff --git a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
+index 5c11063cef7..ec6bde606bc 100644
+--- a/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
++++ b/src/vs/workbench/contrib/chat/browser/chat.contribution.ts
+@@ -140,7 +140,6 @@ import { QuickChatService } from './widgetHosts/chatQuick.js';
+ import { ChatResponseAccessibleView } from './accessibility/chatResponseAccessibleView.js';
+ import { ChatTerminalOutputAccessibleView } from './accessibility/chatTerminalOutputAccessibleView.js';
+ import { ChatSetupContribution, ChatTeardownContribution } from './chatSetup/chatSetupContributions.js';
+-import { ChatStatusBarEntry } from './chatStatus/chatStatusEntry.js';
+ import { ChatVariablesService } from './attachments/chatVariables.js';
+ import { ChatWidget } from './widget/chatWidget.js';
+ import { ChatCodeBlockContextProviderService } from './codeBlockContextProviderService.js';
