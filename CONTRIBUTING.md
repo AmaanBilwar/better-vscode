@@ -25,11 +25,23 @@ uv run utils/patches.py setup --target "C:\...\coding\vscode"
 # Step 3: Generate patch (diffs your changes against the baseline, then resets tree)
 uv run utils/patches.py generate --target "C:\...\coding\vscode" --name category/my-patch
 
+# Split into multiple patches by changed file
+uv run utils/patches.py generate --target "C:\...\coding\vscode" --name ai/remove-ctrl-i --split file
+
+# Split into multiple patches by hunk (smallest units)
+uv run utils/patches.py generate --target "C:\...\coding\vscode" --name ai/remove-ctrl-i --split hunk
+
 # Or if something goes wrong, reset manually:
 uv run utils/patches.py teardown --target "C:\...\coding\vscode"
 ```
 
 `setup` applies all existing patches and commits them as a baseline. `generate` diffs only your new changes against that baseline, so patches never overlap with each other. The tree is automatically reset after generation.
+
+`generate --split file` creates one patch per changed file. `generate --split hunk` creates one patch per hunk. This is useful when you want a patch series from one working change set.
+
+### AI patch location
+
+Put AI/chat-removal changes under `patches/ai/` unless there is a better existing category.
 
 ## Workflows
 
@@ -38,6 +50,8 @@ uv run utils/patches.py teardown --target "C:\...\coding\vscode"
 2. Setup: `uv run utils/patches.py setup --target "..."`
 3. Edit files in vscode
 4. Generate: `uv run utils/patches.py generate --target "..." --name category/name`
+   - Optional split by file: `--split file`
+   - Optional split by hunk: `--split hunk`
    (tree is auto-reset after generation)
 
 ### Upstream VS Code updates
