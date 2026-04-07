@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -48,6 +49,82 @@ def parse_series():
         raise SystemExit(f"Series file not found: {SERIES_FILE}")
     lines = SERIES_FILE.read_text().splitlines()
     return [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]
+
+
+def _slugify(text):
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", text.strip()).strip("-").lower()
+    return slug or "patch"
+
+
+def _split_diff_sections(diff_text):
+    lines = diff_text.splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines) if line.startswith("diff --git ")]
+    if not starts:
+        return []
+
+    starts.append(len(lines))
+    sections = []
+    for i in range(len(starts) - 1):
+        sections.append(lines[starts[i] : starts[i + 1]])
+    return sections
+
+
+def _section_path(section_lines):
+    if not section_lines:
+        return "unknown"
+
+    first = section_lines[0].strip()
+    # Example: diff --git a/src/foo.ts b/src/foo.ts
+    if first.startswith("diff --git "):
+        parts = first.split()
+        if len(parts) >= 4 and parts[3].startswith("b/"):
+            return parts[3][2:]
+    return "unknown"
+
+
+def _split_section_hunks(section_lines):
+    hunk_starts = [
+        i
+        for i, line in enumerate(section_lines)
+        if line.startswith("@@ ") or line.startswith("@@@ ")
+    ]
+    if not hunk_starts:
+        return [section_lines]
+
+    prefix = section_lines[: hunk_starts[0]]
+    hunks = []
+    for i, start in enumerate(hunk_starts):
+        end = hunk_starts[i + 1] if i + 1 < len(hunk_starts) else len(section_lines)
+        hunks.append(prefix + section_lines[start:end])
+    return hunks
+
+
+def _build_split_patches(diff_text, base_name, split_mode):
+    sections = _split_diff_sections(diff_text)
+    if not sections:
+        return []
+
+    entries = []
+    counter = 1
+    for section in sections:
+        rel_path = _section_path(section)
+        rel_slug = _slugify(rel_path)
+
+        parts = [section] if split_mode == "file" else _split_section_hunks(section)
+        part_total = len(parts)
+        for part_index, part_lines in enumerate(parts, 1):
+            if split_mode == "hunk":
+                suffix = (
+                    f"{counter:03d}-{rel_slug}-h{part_index:02d}-of-{part_total:02d}"
+                )
+            else:
+                suffix = f"{counter:03d}-{rel_slug}"
+
+            patch_name = f"{base_name}-{suffix}.patch"
+            entries.append((patch_name, "".join(part_lines)))
+            counter += 1
+
+    return entries
 
 
 def run_patch(patch_path, tree_path, reverse=False, dry_run=False, fuzz=True):
@@ -225,19 +302,9 @@ def cmd_generate(args):
         raise SystemExit(f"Target directory not found: {target}")
 
     name = args.name
-    if not name.endswith(".patch"):
-        name += ".patch"
-
+    split_mode = args.split
     if any(c in name for c in "\\ :"):
         raise SystemExit(f"Invalid patch name: {name}")
-
-    patch_path = PATCHES_DIR / name
-    if patch_path.exists() and not args.force:
-        resp = (
-            input(f"Patch '{name}' already exists. Overwrite? (y/N) ").strip().lower()
-        )
-        if resp != "y":
-            return
 
     # Check we're on the baseline commit (i.e., setup was run)
     log_result = subprocess.run(
@@ -260,18 +327,52 @@ def cmd_generate(args):
         _reset_baseline(target, series)
         return
 
-    patch_path.parent.mkdir(parents=True, exist_ok=True)
-    patch_path.write_text(diff_result.stdout, encoding="utf-8")
-    log(f"Generated: {patch_path}", "green")
+    patches_to_write = []
+    if split_mode == "none":
+        final_name = name if name.endswith(".patch") else f"{name}.patch"
+        patches_to_write = [(final_name, diff_result.stdout)]
+    else:
+        base_name = name[:-6] if name.endswith(".patch") else name
+        patches_to_write = _build_split_patches(
+            diff_result.stdout, base_name, split_mode
+        )
+        if not patches_to_write:
+            log("No split patches were produced.", "yellow")
+            series = parse_series()
+            _reset_baseline(target, series)
+            return
+
+    existing = []
+    for patch_name, _ in patches_to_write:
+        patch_path = PATCHES_DIR / patch_name
+        if patch_path.exists():
+            existing.append(patch_name)
+
+    if existing and not args.force:
+        log("Patch file(s) already exist. Use --force to overwrite:", "red")
+        for patch_name in existing:
+            log(f"  - {patch_name}", "red")
+        series = parse_series()
+        _reset_baseline(target, series)
+        sys.exit(1)
+
+    generated_names = []
+    for patch_name, patch_text in patches_to_write:
+        patch_path = PATCHES_DIR / patch_name
+        patch_path.parent.mkdir(parents=True, exist_ok=True)
+        patch_path.write_text(patch_text, encoding="utf-8")
+        generated_names.append(patch_name)
+        log(f"Generated: {patch_path}", "green")
 
     # Update series file
     series = parse_series()
-    if name not in series:
-        with open(SERIES_FILE, "a") as f:
-            f.write(name + "\n")
-        log(f"Added to series: {name}", "green")
-    else:
-        log(f"Already in series: {name}", "yellow")
+    with open(SERIES_FILE, "a") as f:
+        for patch_name in generated_names:
+            if patch_name not in series:
+                f.write(patch_name + "\n")
+                log(f"Added to series: {patch_name}", "green")
+            else:
+                log(f"Already in series: {patch_name}", "yellow")
 
     # Show summary
     stat = subprocess.run(
@@ -363,7 +464,15 @@ def main():
     )
     p_gen.add_argument("--target", required=True, help="VS Code source tree")
     p_gen.add_argument(
-        "--name", required=True, help="Patch name (e.g., 'remove-telemetry')"
+        "--name",
+        required=True,
+        help="Patch name or prefix (e.g., 'ai/remove-telemetry')",
+    )
+    p_gen.add_argument(
+        "--split",
+        choices=["none", "file", "hunk"],
+        default="none",
+        help="Split generated output into separate patches by file or hunk",
     )
     p_gen.add_argument("--force", action="store_true", help="Overwrite existing patch")
 
