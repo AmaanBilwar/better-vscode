@@ -1,18 +1,18 @@
 diff --git a/build/lib/policies/policyData.jsonc b/build/lib/policies/policyData.jsonc
-index 84c357c7a45..522b8745ad0 100644
+index 34fa422822a..b72657cf7ea 100644
 --- a/build/lib/policies/policyData.jsonc
 +++ b/build/lib/policies/policyData.jsonc
-@@ -312,7 +312,7 @@
-                 }
+@@ -351,7 +351,7 @@
+                 ]
              },
-             "type": "boolean",
--            "default": true,
-+            "default": false,
-             "included": true
-         },
-         {
+             "type": "string",
+-            "default": "all",
++            "default": "off",
+             "enum": [
+                 "all",
+                 "error",
 diff --git a/src/vs/platform/telemetry/common/telemetryService.ts b/src/vs/platform/telemetry/common/telemetryService.ts
-index dfdd41ae6c1..e5a12580523 100644
+index dd0a632b9f0..f7d1410eaf0 100644
 --- a/src/vs/platform/telemetry/common/telemetryService.ts
 +++ b/src/vs/platform/telemetry/common/telemetryService.ts
 @@ -304,7 +304,8 @@ configurationRegistry.registerConfiguration({
@@ -82,10 +82,10 @@ index e8fc3214c6f..063f32c9b6e 100644
  		if (initialTelemetryLevelArg === 'all') {
  			injectedTelemetryLevel = TelemetryLevel.USAGE;
 diff --git a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
-index 170cced5980..9941d7add2e 100644
+index 72e1d02a418..700cbe31b42 100644
 --- a/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
 +++ b/src/vs/workbench/contrib/editTelemetry/browser/editTelemetry.contribution.ts
-@@ -27,13 +27,15 @@ configurationRegistry.registerConfiguration({
+@@ -27,7 +27,8 @@ configurationRegistry.registerConfiguration({
  		[EDIT_TELEMETRY_SETTING_ID]: {
  			markdownDescription: localize('telemetry.editStats.enabled', "Controls whether to enable telemetry for edit statistics (only sends statistics if general telemetry is enabled)."),
  			type: 'boolean',
@@ -93,8 +93,9 @@ index 170cced5980..9941d7add2e 100644
 +			default: false,
 +			included: false,
  			tags: ['experimental'],
- 		},
- 		[AI_STATS_SETTING_ID]: {
+ 			experiment: {
+ 				mode: 'auto'
+@@ -37,6 +38,7 @@ configurationRegistry.registerConfiguration({
  			markdownDescription: localize('editor.aiStats.enabled', "Controls whether to enable AI statistics in the editor. The gauge shows the average AI rate across 5-minute sessions, where each session's rate is calculated as AI-inserted characters divided by total inserted characters."),
  			type: 'boolean',
  			default: false,
@@ -102,7 +103,7 @@ index 170cced5980..9941d7add2e 100644
  			tags: ['experimental'],
  			experiment: {
  				mode: 'auto'
-@@ -43,6 +45,7 @@ configurationRegistry.registerConfiguration({
+@@ -46,6 +48,7 @@ configurationRegistry.registerConfiguration({
  			markdownDescription: localize('telemetry.editStats.detailed.enabled', "Controls whether to enable telemetry for detailed edit statistics (only sends statistics if general telemetry is enabled)."),
  			type: 'boolean',
  			default: false,
@@ -110,7 +111,7 @@ index 170cced5980..9941d7add2e 100644
  			tags: ['experimental'],
  			experiment: {
  				mode: 'auto'
-@@ -52,12 +55,14 @@ configurationRegistry.registerConfiguration({
+@@ -55,12 +58,14 @@ configurationRegistry.registerConfiguration({
  			markdownDescription: localize('telemetry.editStats.showStatusBar', "Controls whether to show the status bar for edit telemetry."),
  			type: 'boolean',
  			default: false,
@@ -139,7 +140,7 @@ index 6f2bbf8fc54..278317504c3 100644
  			const enabled = editSourceTrackingEnabled.read(r);
  			if (!enabled || !telemetryLevelEnabled(telemetryService, TelemetryLevel.USAGE)) {
 diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
-index ebb59a1ebce..4763821d70a 100644
+index 5a170f57dcc..27ba646ecf8 100644
 --- a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
 +++ b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
 @@ -990,7 +990,7 @@ export class GettingStartedPage extends EditorPane {
