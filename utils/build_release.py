@@ -142,6 +142,7 @@ def main() -> int:
 
     env = os.environ.copy()
     env.setdefault("VSCODE_SKIP_NODE_VERSION_CHECK", "1")
+    env["SKIP_WIN32_DEPS_PATCH"] = "1"
 
     run(args.install_command, cwd=vscode_dir, env=env)
 
